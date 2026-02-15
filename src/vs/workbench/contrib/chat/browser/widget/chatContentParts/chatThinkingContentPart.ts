@@ -6,7 +6,7 @@
 import { $, clearNode, getWindow, hide, scheduleAtNextAnimationFrame } from '../../../../../../base/browser/dom.js';
 import { alert } from '../../../../../../base/browser/ui/aria/aria.js';
 import { DomScrollableElement } from '../../../../../../base/browser/ui/scrollbar/scrollableElement.js';
-import { Language, language as platformLanguage } from '../../../../../../base/common/platform.js';
+import { language as platformLanguage } from '../../../../../../base/common/platform.js';
 import { ScrollbarVisibility } from '../../../../../../base/common/scrollable.js';
 import { IChatMarkdownContent, IChatThinkingPart, IChatToolInvocation, IChatToolInvocationSerialized } from '../../../common/chatService/chatService.js';
 import { IChatContentPartRenderContext, IChatContentPart } from './chatContentParts.js';
@@ -865,7 +865,11 @@ export class ChatThinkingContentPart extends ChatCollapsibleContentPart implemen
 				context = this.currentThinkingValue.substring(0, 1000);
 			}
 
-			const languageRule = Language.isDefaultVariant() ? '' : `\n\t\t\t- Language: ${platformLanguage}`;
+			const validLocales = ['auto', 'en', 'fr', 'it', 'de', 'es', 'ru', 'zh-CN', 'zh-TW', 'ja', 'ko', 'cs', 'pt-br', 'tr', 'pl'];
+			const override = this.configurationService.getValue<string>(ChatConfiguration.ThinkingTitleLanguage) ?? 'auto';
+			const effectiveLocale = override !== 'auto' && validLocales.includes(override) ? override : platformLanguage;
+			const isEnglish = effectiveLocale === 'en' || effectiveLocale.startsWith('en-');
+			const languageRule = isEnglish ? '' : `\n\t\t\t- Language: ${effectiveLocale}`;
 			const prompt = `Summarize the following content in a SINGLE sentence (under 10 words) using past tense. Follow these rules strictly:
 
 			OUTPUT FORMAT:
