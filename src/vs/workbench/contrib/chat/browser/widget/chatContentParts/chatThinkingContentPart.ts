@@ -6,6 +6,7 @@
 import { $, clearNode, getWindow, hide, scheduleAtNextAnimationFrame } from '../../../../../../base/browser/dom.js';
 import { alert } from '../../../../../../base/browser/ui/aria/aria.js';
 import { DomScrollableElement } from '../../../../../../base/browser/ui/scrollbar/scrollableElement.js';
+import { Language, language as platformLanguage } from '../../../../../../base/common/platform.js';
 import { ScrollbarVisibility } from '../../../../../../base/common/scrollable.js';
 import { IChatMarkdownContent, IChatThinkingPart, IChatToolInvocation, IChatToolInvocationSerialized } from '../../../common/chatService/chatService.js';
 import { IChatContentPartRenderContext, IChatContentPart } from './chatContentParts.js';
@@ -864,13 +865,14 @@ export class ChatThinkingContentPart extends ChatCollapsibleContentPart implemen
 				context = this.currentThinkingValue.substring(0, 1000);
 			}
 
+			const languageRule = Language.isDefaultVariant() ? '' : `\n\t\t\t- Language: ${platformLanguage}`;
 			const prompt = `Summarize the following content in a SINGLE sentence (under 10 words) using past tense. Follow these rules strictly:
 
 			OUTPUT FORMAT:
 			- MUST be a single sentence
 			- MUST be under 10 words
 			- The FIRST word MUST be a past tense verb (e.g. "Updated", "Reviewed", "Created", "Searched", "Analyzed")
-			- No quotes, no trailing punctuation
+			- No quotes, no trailing punctuation${languageRule}
 
 			GENERAL:
 			- The content may include tool invocations (file edits, reads, searches, terminal commands), reasoning headers, or raw thinking text
