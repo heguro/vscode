@@ -1219,7 +1219,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 				return String(answer);
 
 			case 'singleSelect': {
-				if (typeof answer === 'object' && answer !== null && hasKey(answer, { selectedValue: true })) {
+				if (typeof answer === 'object' && answer !== null && (hasKey(answer, { selectedValue: true }) || hasKey(answer, { freeformValue: true }))) {
 					const { selectedValue, freeformValue } = answer as { selectedValue?: unknown; freeformValue?: string };
 					const selectedLabel = question.options?.find(opt => opt.value === selectedValue)?.label;
 					// For singleSelect, freeform takes priority over selection

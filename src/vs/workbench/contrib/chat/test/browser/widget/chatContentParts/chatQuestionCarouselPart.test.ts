@@ -629,6 +629,26 @@ suite('ChatQuestionCarouselPart', () => {
 			assert.ok(summaryValue?.textContent?.includes('saved answer'), 'Summary should show saved answer from data');
 		});
 
+		test('renders singleSelect freeform answer after JSON round-trip (no selectedValue key)', () => {
+			// After JSON serialization, { selectedValue: undefined, freeformValue: "text" }
+			// becomes { freeformValue: "text" } because JSON.stringify strips undefined values.
+			const carousel: IChatQuestionCarousel = {
+				kind: 'questionCarousel',
+				questions: [
+					{ id: 'q1', type: 'singleSelect', title: 'Pick one', options: [{ id: 'a', label: 'Option A', value: 'a' }] }
+				],
+				allowSkip: true,
+				isUsed: true,
+				data: { q1: { freeformValue: 'my custom answer' } }
+			};
+			createWidget(carousel);
+
+			const summary = widget.domNode.querySelector('.chat-question-carousel-summary');
+			assert.ok(summary, 'Should show summary container');
+			const summaryValue = summary?.querySelector('.chat-question-summary-answer-title');
+			assert.ok(summaryValue?.textContent?.includes('my custom answer'), 'Summary should show freeform answer even without selectedValue key');
+		});
+
 		test('shows skipped message when constructed with isUsed but no data', () => {
 			const carousel: IChatQuestionCarousel = {
 				kind: 'questionCarousel',
