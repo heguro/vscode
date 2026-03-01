@@ -1219,7 +1219,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 				return String(answer);
 
 			case 'singleSelect': {
-				if (typeof answer === 'object' && answer !== null && (hasKey(answer, { selectedValue: true }) || hasKey(answer, { freeformValue: true }))) {
+				if (typeof answer === 'object' && answer !== null && hasKey(answer, { selectedValue: true })) {
 					const { selectedValue, freeformValue } = answer as { selectedValue?: unknown; freeformValue?: string };
 					const selectedLabel = question.options?.find(opt => opt.value === selectedValue)?.label;
 					// For singleSelect, freeform takes priority over selection
@@ -1227,6 +1227,14 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 						return freeformValue;
 					}
 					return selectedLabel ?? String(selectedValue ?? '');
+				}
+				// After JSON round-trip, { selectedValue: undefined, freeformValue: "text" } loses
+				// the selectedValue key because JSON.stringify strips undefined values
+				if (typeof answer === 'object' && answer !== null && 'freeformValue' in answer) {
+					const freeformValue = (answer as { freeformValue?: string }).freeformValue;
+					if (freeformValue) {
+						return freeformValue;
+					}
 				}
 				const label = question.options?.find(opt => opt.value === answer)?.label;
 				return label ?? String(answer);
