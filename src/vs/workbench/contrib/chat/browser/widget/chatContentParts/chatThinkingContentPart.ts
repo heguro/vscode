@@ -869,14 +869,16 @@ export class ChatThinkingContentPart extends ChatCollapsibleContentPart implemen
 			const override = this.configurationService.getValue<string>(ChatConfiguration.ThinkingTitleLanguage) ?? 'auto';
 			const effectiveLocale = override !== 'auto' && validLocales.includes(override) ? override : platformLanguage;
 			const isEnglish = effectiveLocale === 'en' || effectiveLocale.startsWith('en-');
-			const languageRule = isEnglish ? '' : `\n\t\t\t- Language: ${effectiveLocale}`;
+			const verbRule = isEnglish
+				? '- The FIRST word MUST be a past tense verb (e.g. "Updated", "Reviewed", "Created", "Searched", "Analyzed")'
+				: `- MUST use past tense\n\t\t\t- MUST be written in ${effectiveLocale}`;
 			const prompt = `Summarize the following content in a SINGLE sentence (under 10 words) using past tense. Follow these rules strictly:
 
 			OUTPUT FORMAT:
 			- MUST be a single sentence
 			- MUST be under 10 words
-			- The FIRST word MUST be a past tense verb (e.g. "Updated", "Reviewed", "Created", "Searched", "Analyzed")
-			- No quotes, no trailing punctuation${languageRule}
+			${verbRule}
+			- No quotes, no trailing punctuation
 
 			GENERAL:
 			- The content may include tool invocations (file edits, reads, searches, terminal commands), reasoning headers, or raw thinking text
