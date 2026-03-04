@@ -257,8 +257,34 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 						}
 					}
 				}
-			} else if (event.keyCode === KeyCode.Enter && (event.metaKey || event.ctrlKey)) {
-				// Cmd/Ctrl+Enter submits immediately from anywhere
+			} else if (event.keyCode === KeyCode.Enter && event.ctrlKey && !event.metaKey) {
+				// Ctrl+Enter in a textarea inserts a newline (matching search widget
+				// behavior where the physical Control key triggers newline insertion).
+				// Outside textareas, Ctrl+Enter submits immediately.
+				const target = e.target as HTMLElement;
+				if (dom.isHTMLTextAreaElement(target)) {
+					e.preventDefault();
+					e.stopPropagation();
+					const start = target.selectionStart;
+					const end = target.selectionEnd;
+					target.value = target.value.substring(0, start) + '\n' + target.value.substring(end);
+					target.selectionStart = target.selectionEnd = start + 1;
+					// Trigger auto-resize inline (cannot use `new Event('input')` because the
+					// `Event` identifier is shadowed by the import from `vs/base/common/event`)
+					target.style.height = 'auto';
+					target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
+					if (this._inputScrollable) {
+						this.layoutInputScrollable(this._inputScrollable);
+					}
+					this._onDidChangeHeight.fire();
+					this.saveCurrentAnswer();
+				} else {
+					e.preventDefault();
+					e.stopPropagation();
+					this.submit();
+				}
+			} else if (event.keyCode === KeyCode.Enter && event.metaKey) {
+				// Cmd+Enter (macOS) submits immediately from anywhere
 				e.preventDefault();
 				e.stopPropagation();
 				this.submit();
