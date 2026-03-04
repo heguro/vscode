@@ -91,6 +91,10 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		this._register(focusTracker.onDidBlur(() => this._inChatQuestionCarouselContextKey.set(false)));
 		this._register({ dispose: () => this._inChatQuestionCarouselContextKey.reset() });
 
+		// Prevent wheel events from bubbling to the parent chat tree so that
+		// hovering over the question carousel never scrolls the chat view.
+		this._register(dom.addDisposableListener(this.domNode, dom.EventType.MOUSE_WHEEL, e => e.stopPropagation()));
+
 		// Set up accessibility attributes for the carousel container
 		this.domNode.tabIndex = 0;
 		this.domNode.setAttribute('role', 'region');
