@@ -15,9 +15,8 @@ import { hasKey } from '../../../../../../base/common/types.js';
 import { localize } from '../../../../../../nls.js';
 import { IAccessibilityService } from '../../../../../../platform/accessibility/common/accessibility.js';
 import { IMarkdownRendererService } from '../../../../../../platform/markdown/browser/markdownRenderer.js';
-import { defaultButtonStyles, defaultCheckboxStyles, defaultInputBoxStyles } from '../../../../../../platform/theme/browser/defaultStyles.js';
+import { defaultButtonStyles, defaultCheckboxStyles } from '../../../../../../platform/theme/browser/defaultStyles.js';
 import { Button } from '../../../../../../base/browser/ui/button/button.js';
-import { InputBox } from '../../../../../../base/browser/ui/inputbox/inputBox.js';
 import { DomScrollableElement } from '../../../../../../base/browser/ui/scrollbar/scrollableElement.js';
 import { Checkbox } from '../../../../../../base/browser/ui/toggle/toggle.js';
 import { IChatQuestion, IChatQuestionCarousel } from '../../../common/chatService/chatService.js';
@@ -59,7 +58,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 
 	private _isSkipped = false;
 
-	private readonly _textInputBoxes: Map<string, InputBox> = new Map();
+	private readonly _textInputBoxes: Map<string, HTMLTextAreaElement> = new Map();
 	private readonly _singleSelectItems: Map<string, { items: HTMLElement[]; selectedIndex: number }> = new Map();
 	private readonly _multiSelectCheckboxes: Map<string, Checkbox[]> = new Map();
 	private readonly _freeformTextareas: Map<string, HTMLTextAreaElement> = new Map();
@@ -233,11 +232,9 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 				this.ignore();
 			} else if (!isSingleQuestion && (event.keyCode === KeyCode.RightArrow || event.keyCode === KeyCode.LeftArrow)) {
 				// Arrow L/R navigates tabs from anywhere in the carousel,
-				// except when focus is in a text input or textarea (where arrows move cursor)
+				// except when focus is in a textarea (where arrows move cursor)
 				const target = e.target as HTMLElement;
-				const isTextInput = target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text';
-				const isTextarea = target.tagName === 'TEXTAREA';
-				if (!isTextInput && !isTextarea) {
+				if (target.tagName !== 'TEXTAREA') {
 					e.preventDefault();
 					e.stopPropagation();
 					const totalTabs = this._tabItems.length; // includes Review tab
@@ -289,12 +286,11 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 				e.stopPropagation();
 				this.submit();
 			} else if (event.keyCode === KeyCode.Enter && !event.shiftKey) {
-				// Handle Enter key for text inputs and freeform textareas, not radio/checkbox or buttons
+				// Handle Enter key for freeform textareas, not radio/checkbox or buttons
 				// Buttons have their own Enter/Space handling via Button class
 				const target = e.target as HTMLElement;
-				const isTextInput = target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text';
 				const isFreeformTextarea = target.tagName === 'TEXTAREA' && target.classList.contains('chat-question-freeform-textarea');
-				if (isTextInput || isFreeformTextarea) {
+				if (isFreeformTextarea) {
 					e.preventDefault();
 					e.stopPropagation();
 					this.handleNextOrSubmit();
@@ -897,25 +893,35 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 	}
 
 	private renderTextInput(container: HTMLElement, question: IChatQuestion): void {
-		const inputBox = this._inputBoxes.add(new InputBox(container, undefined, {
-			placeholder: localize('chat.questionCarousel.enterText', 'Enter your answer'),
-			inputBoxStyles: defaultInputBoxStyles,
-		}));
-		this._inputBoxes.add(inputBox.onDidChange(() => this.saveCurrentAnswer()));
+		const freeformContainer = dom.$('.chat-question-freeform');
+		const textarea = dom.$<HTMLTextAreaElement>('textarea.chat-question-freeform-textarea');
+		textarea.placeholder = localize('chat.questionCarousel.enterText', 'Enter your answer');
+		textarea.rows = 1;
 
 		// Restore previous answer if exists
 		const previousAnswer = this._answers.get(question.id);
 		if (previousAnswer !== undefined) {
-			inputBox.value = String(previousAnswer);
+			textarea.value = String(previousAnswer);
 		} else if (question.defaultValue !== undefined) {
-			inputBox.value = String(question.defaultValue);
+			textarea.value = String(question.defaultValue);
 		}
 
-		this._textInputBoxes.set(question.id, inputBox);
+		// Setup auto-resize behavior and save on change
+		const autoResize = this.setupTextareaAutoResize(textarea);
+		this._inputBoxes.add(dom.addDisposableListener(textarea, dom.EventType.INPUT, () => this.saveCurrentAnswer()));
+
+		freeformContainer.appendChild(textarea);
+		container.appendChild(freeformContainer);
+		this._textInputBoxes.set(question.id, textarea);
+
+		// Resize textarea if it has restored content (must wait for layout)
+		if (textarea.value) {
+			this._inputBoxes.add(dom.runAtThisOrScheduleAtNextAnimationFrame(dom.getWindow(textarea), () => autoResize()));
+		}
 
 		// Focus on input when rendered using proper DOM scheduling
 		if (this._shouldAutoFocus()) {
-			this._inputBoxes.add(dom.runAtThisOrScheduleAtNextAnimationFrame(dom.getWindow(inputBox.element), () => inputBox.focus()));
+			this._inputBoxes.add(dom.runAtThisOrScheduleAtNextAnimationFrame(dom.getWindow(textarea), () => textarea.focus()));
 		}
 	}
 
@@ -1374,8 +1380,8 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 
 		switch (question.type) {
 			case 'text': {
-				const inputBox = this._textInputBoxes.get(question.id);
-				return inputBox?.value ?? question.defaultValue;
+				const textarea = this._textInputBoxes.get(question.id);
+				return textarea?.value ?? question.defaultValue;
 			}
 
 			case 'singleSelect': {
