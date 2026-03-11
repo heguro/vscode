@@ -35,6 +35,7 @@ export enum ChatConfiguration {
 	CheckpointsEnabled = 'chat.checkpoints.enabled',
 	ThinkingStyle = 'chat.agent.thinkingStyle',
 	ThinkingGenerateTitles = 'chat.agent.thinking.generateTitles',
+	ThinkingTitleLanguage = 'chat.agent.thinking.titleLanguage',
 	TerminalToolsInThinking = 'chat.agent.thinking.terminalTools',
 	SimpleTerminalCollapsible = 'chat.tools.terminal.simpleCollapsible',
 	ThinkingPhrases = 'chat.agent.thinking.phrases',
